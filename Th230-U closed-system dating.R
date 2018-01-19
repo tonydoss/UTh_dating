@@ -20,7 +20,7 @@ data <- subset(iolite_results, (grepl(sample_name, X)))
 # number of samples to solve
 number_sampletosolve <- nrow(data)
 # nb of times optimisation is repeated (for each sample)
-nbit <- 10
+nbit <- 100
 
 lowerbound <- c(2, 1.0) # lower bound values for age (log10(yr)) and initial (234U/238U)
 upperbound <- c(6, 5.0) # upper bound values for age (log10(yr)) and initial (234U/238U)
@@ -30,10 +30,8 @@ time_results <- vector(mode="numeric", length=number_sampletosolve)
 err_time_results <- vector(mode="numeric", length=number_sampletosolve)
 R48i_results <- vector(mode="numeric", length=number_sampletosolve)
 err_R48i_results <- vector(mode="numeric", length=number_sampletosolve)
-p2se_time_results <- vector(mode="numeric", length=number_sampletosolve)
-m2se_time_results <- vector(mode="numeric", length=number_sampletosolve)
-p2se_R48i_results <- vector(mode="numeric", length=number_sampletosolve)
-m2se_R48i_results <- vector(mode="numeric", length=number_sampletosolve)
+time_2se_results <- vector(mode="numeric", length=number_sampletosolve)
+R48i_2se_results <- vector(mode="numeric", length=number_sampletosolve)
 
 # repeat loop for each sample
 for (count in 1:number_sampletosolve){
@@ -49,14 +47,11 @@ for (count in 1:number_sampletosolve){
   Th0U8calc <- vector(mode="numeric", length=nbit)
   time <- vector(mode="numeric", length=nbit)
   R48i <- vector(mode="numeric", length=nbit)
-  U48calc_p2se <- vector(mode="numeric", length=nbit)
-  Th0U8calc_p2se <- vector(mode="numeric", length=nbit)
-  time_p2se <- vector(mode="numeric", length=nbit)
-  R48i_p2se <- vector(mode="numeric", length=nbit)
-  U48calcc_m2se <- vector(mode="numeric", length=nbit)
-  Th0U8calc_m2se <- vector(mode="numeric", length=nbit)
-  time_m2se <- vector(mode="numeric", length=nbit)
-  R48i_m2se <- vector(mode="numeric", length=nbit)
+  U48calc_2se <- vector(mode="numeric", length=nbit)
+  Th0U8calc_2se <- vector(mode="numeric", length=nbit)
+  time_2se <- vector(mode="numeric", length=nbit)
+  R48i_2se <- vector(mode="numeric", length=nbit)
+ 
   
   # repeat optimisation 'nbit' number of times for a given sample
   for (i in 1:nbit){
@@ -78,56 +73,38 @@ for (count in 1:number_sampletosolve){
     
     # optimisations
     # do optimisation with measured (234U/238U) & (230Th/238U) 
-    U48target <- U48meas
-    Th0U8target <- Th0U8meas
+    U48target <- runif(1, U48meas - err_R48, U48meas + err_R48)
+    Th0U8target <- runif(1, Th0U8meas - err_R08, Th0U8meas + err_R08)
     sol <- optim(paraminit, funmin, method = "L-BFGS-B",
                  lower = lowerbound, upper = upperbound, control = list(factr = 1e-8))
-    # do optimisation with measured (234U/238U) + 2se & (230Th/238U) - 2se
-    U48target <- U48meas+err_R48
-    Th0U8target <- Th0U8meas-err_R08
-    sol_m2se <- optim(paraminit, funmin, method = "L-BFGS-B",
-                      lower = lowerbound, upper = upperbound, control = list(factr = 1e-8))
-    # do optimisation with measured (234U/238U) - 2se & (230Th/238U) + 2se
-    U48target <- U48meas-err_R48
-    Th0U8target <- Th0U8meas+err_R08    
-    sol_p2se <- optim(paraminit, funmin, method = "L-BFGS-B",
-                      lower = lowerbound, upper = upperbound, control = list(factr = 1e-8))
+    
     # store calculated age, initial (234U/23U) and calculated activity ratios for each optimisation
     time[i] <- 10^sol$par[1]
     R48i[i] <- sol$par[2]
     U48calc[i] <- 1 + (R48i[i] - 1)*exp(-l234*time[i]) # (234U/238U)
     Th0U8calc[i] <- 1 - exp(-l230*time[i]) - (U48calc[i] - 1)*(l230/(l234 - l230))*(1 - exp((l234 - l230)*time[i]))
-    time_m2se[i] <- 10^sol_m2se$par[1]
-    R48i_p2se[i] <- sol_m2se$par[2]
-    time_p2se[i] <- 10^sol_p2se$par[1]
-    R48i_m2se[i] <- sol_p2se$par[2]
   }
   
   # store results from all optimisations for a given sample
-  results <- as.data.frame(cbind(time, time_p2se-time, time-time_m2se, R48i, R48i - R48i_m2se, 
-                                 R48i_p2se - R48i, U48calc, Th0U8calc))
+  results <- as.data.frame(cbind(time, R48i, 
+                                 U48calc, Th0U8calc))
   # take the median of all ages and initial (234U/23U)
   median_time <- median(results$time)
-  median_time_p2se <- median(results$V2)
-  median_time_m2se <- median(results$V3)
+  time_2se <- 2*sd(results$time)
   median_R48i <- median(results$R48i)
-  median_R48i_m2se <- median(results$V5)
-  median_R48i_p2se <- median(results$V6)
-  
+  R48i_2se <- 2*sd(results$R48i)
+    
   # store age, error on age and initial (234U/23U) for each sample
   time_results[count] <- median_time
-  p2se_time_results[count] <- median_time_p2se
-  m2se_time_results[count] <- median_time_m2se
+  time_2se_results[count] <- time_2se
   R48i_results[count] <- median_R48i
-  p2se_R48i_results[count] <- median_R48i_p2se
-  m2se_R48i_results[count] <- median_R48i_m2se
+  R48i_2se_results[count] <- R48i_2se
 }
 
 final_results <- as.data.frame(cbind(as.character(data$X[1:number_sampletosolve]), 
-                                     round(time_results/1000,3), round(p2se_time_results/1000,3), 
-                                     round(m2se_time_results/1000,3), round(R48i_results,3), 
-                                     round(p2se_R48i_results,3), round(m2se_R48i_results,3)))
-colnames(final_results) <- c("ID", "Age (kyr)", "+2se", "-2se", "(234U/238U)i", "+2se", "-2se")
+                                     round(time_results/1000,3), round(time_2se_results/1000,3), 
+                                     round(R48i_results,3), round(R48i_2se_results,3)))
+colnames(final_results) <- c("ID", "Age (kyr)", "2sd", "(234U/238U)i", "2sd")
 # display results
 print(final_results)
 mean(time_results/1000)
