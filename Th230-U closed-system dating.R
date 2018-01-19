@@ -1,17 +1,19 @@
-# Closed-system 230Th-U age calculations
-#    Copyright [yyyy] [name of copyright owner]
+# UTh_dating - Closed-system 230Th-U age calculations
+#
+#    Copyright 2017 Anthony Dosseto
+# 
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+# 
+# http://www.apache.org/licenses/LICENSE-2.0
+# 
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
-   Licensed under the Apache License, Version 2.0 (the "License");
-   you may not use this file except in compliance with the License.
-   You may obtain a copy of the License at
-
-     http://www.apache.org/licenses/LICENSE-2.0
-
-   Unless required by applicable law or agreed to in writing, software
-   distributed under the License is distributed on an "AS IS" BASIS,
-   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-   See the License for the specific language governing permissions and
-   limitations under the License.
 rm(list=ls())
 
 library(deSolve)
@@ -65,7 +67,7 @@ for (count in 1:number_sampletosolve){
   Th0U8calc_2se <- vector(mode="numeric", length=nbit)
   time_2se <- vector(mode="numeric", length=nbit)
   R48i_2se <- vector(mode="numeric", length=nbit)
- 
+  
   
   # repeat optimisation 'nbit' number of times for a given sample
   for (i in 1:nbit){
@@ -107,7 +109,7 @@ for (count in 1:number_sampletosolve){
   time_2se <- 2*sd(results$time)
   median_R48i <- median(results$R48i)
   R48i_2se <- 2*sd(results$R48i)
-    
+  
   # store age, error on age and initial (234U/23U) for each sample
   time_results[count] <- median_time
   time_2se_results[count] <- time_2se
@@ -124,4 +126,3 @@ print(final_results)
 mean(time_results/1000)
 
 write.table(final_results, file = paste(sample_name,".csv"), sep = ",", row.names = F)
- 
