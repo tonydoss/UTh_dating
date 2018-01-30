@@ -14,13 +14,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
 library(deSolve)
+library(ggplot2)
 
 l234 <- 2.8262e-6 # 234U decay constant (a-1)
 l230 <- 9.1577e-6 # 230Th decay constant (a-1)
 
+# set working directory
+#path <- "C:/Users/me/mydatafolder"
+#setwd(path)
+
 # name of sample to solve
 sample_name <- "mysample"
+sample_name <- "MK16"
 # import iolite results
 iolite_results <- read.table("IoliteExport_All_Integrations.txt", 
                              header = TRUE, sep = "\t", comment.char = "")
@@ -111,12 +118,40 @@ for (count in 1:number_sampletosolve){
   R48i_2se_results[count] <- R48i_2se
 }
 
-final_results <- as.data.frame(cbind(as.character(data$X[1:number_sampletosolve]), 
-                                     round(time_results/1000,3), round(time_2se_results/1000,3), 
+# store results
+final_results <- as.data.frame(cbind(round(time_results/1000,3), 
+                                     round(time_2se_results/1000,3), 
                                      round(R48i_results,3), round(R48i_2se_results,3)))
+final_results <- as.data.frame(cbind(as.character(data$X[1:number_sampletosolve]), final_results))
+
+# give column names
 colnames(final_results) <- c("ID", "Age (kyr)", "2sd", "(234U/238U)i", "2sd")
-# display results
+
+# display results in the console
 print(final_results)
+# display average age (in ka)
 mean(time_results/1000)
 
+# save results to a csv file with 'sample_name' as file name
 write.table(final_results, file = paste(sample_name,".csv"), sep = ",", row.names = F)
+
+# plot ages
+p1 <- ggplot(final_results, aes(ID, `Age (kyr)`)) + # plot ages
+  geom_errorbar(aes(ymin = (`Age (kyr)` - `2sd`),ymax = (`Age (kyr)` + `2sd`)), width=0.1) + # plot error bars
+  geom_point(size=5) + # plot points
+  xlab("Sample ID") + # x axis label
+  ylab("Age (ka)") # y axis label
+
+p1
+
+# change column name of initial (234U/238U) error so it can be used to show error bars
+colnames(final_results) <- c("ID", "Age (kyr)", "2sd", "(234U/238U)i", "2sd#2")
+
+# plot initial (234U/238U)
+p2 <- ggplot(final_results, aes(ID, `(234U/238U)i`)) + # plot ages
+  geom_errorbar(aes(ymin = (`(234U/238U)i` - `2sd#2`),ymax = (`(234U/238U)i` + `2sd#2`)), width=0.1) + # plot error bars
+  geom_point(size=5) + # plot points
+  xlab("Sample ID") + # x axis label
+  ylab("Age (ka)") # y axis label
+
+p2
