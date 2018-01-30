@@ -14,19 +14,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
 library(deSolve)
 library(ggplot2)
 
 l234 <- 2.8262e-6 # 234U decay constant (a-1)
 l230 <- 9.1577e-6 # 230Th decay constant (a-1)
 
-# set working directory
-#path <- "C:/Users/me/mydatafolder"
-#setwd(path)
-
 # name of sample to solve
-sample_name <- "mysample"
 sample_name <- "MK16"
 # import iolite results
 iolite_results <- read.table("IoliteExport_All_Integrations.txt", 
